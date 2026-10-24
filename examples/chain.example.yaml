@@ -1,0 +1,68 @@
+# ISP 链式教学示例：本机 -> 前置节点 -> ISP；全部服务数据均为虚构。
+proxies: # 前置和出口节点同处于这份配置中。
+  - name: 示例-前置节点 # dialer 组引用的名称；使用其他名称时同步修改引用。
+    type: ss # 示例使用 Shadowsocks；实际使用其他协议时替换整个节点定义。
+    server: 198.51.100.10 # 文档专用地址，替换为实际前置节点地址。
+    port: 443 # 示例前置端口，按实际节点填写。
+    cipher: aes-128-gcm # 示例加密方法，必须与实际前置服务器一致。
+    password: "DemoOnly-Upstream-Password" # 虚构前置密码，按实际节点替换。
+    udp: false # 示例只配置 TCP 接入，不预设 UDP 能力。
+  - name: ISP-HTTP # HTTP 节点显示名称。
+    type: http # HTTP CONNECT 代理协议。
+    server: 203.0.113.20 # 文档专用地址，替换为真实接入端点。
+    port: 18080 # 虚构 HTTP 代理端口，按订单替换。
+    username: demo_isp_user # 虚构认证用户名，按订单替换。
+    password: "DemoOnly-Isp-Password" # 虚构密码，按订单替换并保留引号。
+    dialer-proxy: dialer # 通过前置选择组建立到 ISP 的连接。
+  - name: ISP-SOCKS5 # SOCKS5 节点显示名称。
+    type: socks5 # SOCKS5 代理协议。
+    server: 203.0.113.20 # 同一虚构 ISP 接入端点。
+    port: 1080 # 虚构 SOCKS5 端口，按订单替换。
+    username: demo_isp_user # 虚构代理用户名。
+    password: "DemoOnly-Isp-Password" # 虚构代理密码。
+    dialer-proxy: dialer # SOCKS5 出口同样经过前置组。
+    udp: false # 默认不使用未经确认的 UDP 转发。
+proxy-groups: # 前置组和最终出口组承担不同角色。
+  - name: dialer # 名称须与 ISP 节点中的 dialer-proxy 完全一致。
+    type: select # 手动选择已经可用的前置节点。
+    proxies: # 此组不得包含 ISP 节点或 ISP-出口组，以免形成循环。
+      - 示例-前置节点 # 实际使用时替换为你的前置节点名称。
+  - name: ISP-出口 # 供规则引用的最终出口组。
+    type: select # 手动选择 HTTP 或 SOCKS5。
+    proxies: # 成员必须与上面的节点名称一致。
+      - ISP-HTTP # 首次无缓存选择时优先列出的节点。
+      - ISP-SOCKS5 # 可手动选择的另一个协议。
+rules: # 从上到下匹配，内网专用规则应按实际需要放在前面。
+  - DOMAIN,localhost,DIRECT # 本机名称直连。
+  - DOMAIN-SUFFIX,lan,DIRECT # 局域网名称直连。
+  - DOMAIN-SUFFIX,local,DIRECT # 本地发现名称直连。
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve # IPv4 回环直连。
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve # 私有网络直连。
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve # 私有网络直连。
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve # 私有网络直连。
+  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve # 链路本地 IPv4 直连。
+  - IP-CIDR6,::1/128,DIRECT,no-resolve # IPv6 回环直连。
+  - IP-CIDR6,fc00::/7,DIRECT,no-resolve # IPv6 私有网络直连。
+  - IP-CIDR6,fe80::/10,DIRECT,no-resolve # IPv6 链路本地直连。
+  - GEOIP,CN,DIRECT # 中国地区目标直连，依赖内核已有 GeoIP 数据。
+  - MATCH,ISP-出口 # 唯一末尾兜底规则，其他目标走 ISP。
+dns: # 由本配置管理 DNS；目标订阅的应用 DNS 覆写应关闭。
+  enable: true # 启用内核内部 DNS 解析，不额外指定监听端口。
+  enhanced-mode: fake-ip # 使用 Fake-IP 模式。
+  fake-ip-range: 198.18.0.1/16 # 供内核使用的虚拟地址池，不是代理服务器地址。
+  fake-ip-filter-mode: blacklist # 列出的名称不分配 Fake-IP。
+  fake-ip-filter: # 基础真实解析例外；已有 VPN 全局脚本可追加专用域名。
+    - "*.lan" # 局域网域名保持真实解析。
+    - "*.local" # 本地发现域名保持真实解析。
+    - "localhost" # 本机名称保持真实解析。
+  default-nameserver: # 用于解析 DNS 服务器自身的域名。
+    - 223.5.5.5 # 公开 DNS 服务，可按实际网络替换。
+    - 119.29.29.29 # 另一个公开 DNS 服务。
+  nameserver: # 常规域名解析使用的公开 DoH 服务。
+    - https://dns.alidns.com/dns-query # 阿里 DNS over HTTPS。
+    - https://doh.pub/dns-query # DNSPod DNS over HTTPS。
+  proxy-server-nameserver: # 代理服务器使用域名时的解析来源。
+    - https://dns.alidns.com/dns-query # 代理服务器域名解析。
+    - https://doh.pub/dns-query # 代理服务器域名解析。
+  respect-rules: false # 本基础方案不将 DNS 请求再按出口规则转发。
+  nameserver-policy: {} # 专用 VPN 域名策略应由已有配置或全局脚本维护。

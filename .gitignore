@@ -1,0 +1,13 @@
+# 真实配置仅留在本机目录中。
+local/
+private/
+backups/
+logs/
+# 不发布运行缓存或个人环境文件。
+*.log
+*.db
+.env
+.env.*
+__pycache__/
+.DS_Store
+Thumbs.db
