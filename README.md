@@ -174,6 +174,6 @@ HTTP 代理能够通过 CONNECT 转发 HTTPS 网站，不代表“本机到代�
 - [Mihomo 手动选择组](https://wiki.metacubex.one/config/proxy-groups/select/)
 - [Mihomo DNS 配置](https://wiki.metacubex.one/config/dns/)
 - [Clash Verge Rev 配置合成实现](https://github.com/clash-verge-rev/clash-verge-rev/blob/dev/src-tauri/src/enhance/mod.rs)
-- [Proxy-Seller 的 Clash for Windows 配置教程](https://help.proxy-seller.com/zh-CN/articles/14529945)
+- [Windows 11 结合 Clash Verge 的链式代理教程（作者的 Notion 教程）](https://app.notion.com/p/window-11-clash-verge-403a98d2f54c802abf7bcfbc61b8c382)
 
 本项目是独立的中文教学资料，不属于上述软件或供应商的官方服务。
